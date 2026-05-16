@@ -1,0 +1,104 @@
+# Protocollo firmware inclinometro
+
+# Discovery BLE
+# Device name: RideScope
+# Pairing richiesto: si
+# Passkey statica: 123456
+# Service UUID:      58f2a0f5-3d5e-4697-b3c9-67dbe7f5a501
+# command_rx UUID:   58f2a0f5-3d5e-4697-b3c9-67dbe7f5a502
+# response_tx UUID:  58f2a0f5-3d5e-4697-b3c9-67dbe7f5a503
+# live_tx UUID:      58f2a0f5-3d5e-4697-b3c9-67dbe7f5a504
+# ota_data_rx UUID:  58f2a0f5-3d5e-4697-b3c9-67dbe7f5a505
+
+# Regole base
+# - un comando JSON completo per ogni write su command_rx
+# - response_tx e live_tx inviano notify terminate da newline
+# - se il payload supera un pacchetto ATT, il firmware lo spezza su piu notify
+
+# Ping
+{"id":"1","cmd":"ping"}
+# response_tx:
+{"type":"pong","id":"1","status":"ok"}
+
+# Info
+{"id":"2","cmd":"get_info"}
+# response_tx:
+{"type":"info","id":"2","status":"ok","firmware":{"build":"4.5.6","timestamp":"20260331.193448","protocol":"4.11"},"board":{"profile":"Waveshare ESP32-C6 Mini Development Board","mcu":"ESP32-C6FH8","partition_profile":"custom_ota_8mb","sensor_board":"Adafruit LSM6DSOX","sensor_chip":"LSM6DSOX"},"transport":{"kind":"ble","device_name":"RideScope","service_uuid":"58f2a0f5-3d5e-4697-b3c9-67dbe7f5a501","command_rx_uuid":"58f2a0f5-3d5e-4697-b3c9-67dbe7f5a502","response_tx_uuid":"58f2a0f5-3d5e-4697-b3c9-67dbe7f5a503","live_tx_uuid":"58f2a0f5-3d5e-4697-b3c9-67dbe7f5a504","ota_data_rx_uuid":"58f2a0f5-3d5e-4697-b3c9-67dbe7f5a505","pairing_required":true,"pairing_mode":"static_passkey","ota_ble_enabled":true}}
+
+# Config
+{"id":"3","cmd":"get_config"}
+# response_tx:
+{"type":"config","id":"3","status":"ok","complementary_alpha":0.980,"complementary_enabled":true,"accel_lpf_enabled":true,"gyro_lpf_enabled":true,"adaptive_accel_trust_enabled":true,"accel_lpf_alpha":0.150,"gyro_lpf_alpha":0.200,"accel_trust_min_g":0.900,"accel_trust_max_g":1.100,"accel_trust_fade_span_g":0.250,"body_lateral_axis":"+x","body_longitudinal_axis":"+y","body_vertical_axis":"+z","debug_serial":true,"telemetry_period_ms":100,"transport":{"kind":"ble","pairing_required":true,"ota_ble_enabled":true,"ble_client_connected":true,"ble_authenticated":true,"ble_mtu":247}}
+
+# Patch config
+{"id":"4","cmd":"set_config","body_lateral_axis":"+x","body_longitudinal_axis":"+y","body_vertical_axis":"+z","telemetry_period_ms":100}
+
+# Status
+{"id":"5","cmd":"get_status"}
+# response_tx:
+{"type":"status","id":"5","status":"ok","transport":{"kind":"ble","ble_ready":true,"ble_advertising":false,"ble_client_connected":true,"ble_authenticated":true,"ble_response_subscribed":true,"ble_live_subscribed":true,"ble_mtu":247,"ota_ble_enabled":true,"ota_busy":false,"ota_progress_percent":0},"calibration_running":false,"calibration_progress_percent":0,"calibration_valid":false,"reference_valid":false,"filters":{"complementary_enabled":true,"accel_lpf_enabled":true,"gyro_lpf_enabled":true,"adaptive_accel_trust_enabled":true},"uptime_ms":12345,"imu_ready":true,"gps_present":true,"gps_configured":true,"gps_streaming":true,"gps_usable":true,"gps_fix_type":3,"gps_num_sv":12,"gps_fix_age_ms":84,"i2c_address":"0x6a","data_ready_mode":"polling","data_ready_now":false}
+
+# gps_present indica solo se il modulo GNSS risponde sulla UART dedicata.
+# gps_configured indica se il bootstrap/configurazione UBX del modulo e andato a buon fine.
+# gps_streaming indica se il firmware riceve frame NAV-PVT recenti.
+# gps_usable indica se l'ultimo fix GPS e valido e usabile in quel momento.
+
+# Live on demand
+# ts resta il timestamp runtime firmware in ms.
+# its e il timestamp hardware IMU in tick da 25 us.
+# itc e la temperatura interna della IMU in gradi Celsius.
+{"id":"6","cmd":"get_live"}
+# response_tx:
+{"ts":123456,"its":5021120,"r":12.34,"p":47.50,"rr":13.10,"rp":47.50,"ay":0.750,"itc":31.25,"ir":true,"git":345678000,"gok":true,"gft":3,"gsv":12,"glon":121234567,"glat":451234567,"gmsl":152340,"gha":1800,"gvn":12500,"gve":-320,"gvd":40,"gsp":12504,"ghm":1823456,"gsa":220,"ghd":9500}
+
+# Live push
+# live_tx notify:
+{"ts":123456,"its":5021120,"r":12.34,"p":47.50,"rr":13.10,"rp":47.50,"ay":0.750,"itc":31.25,"ir":true,"git":345678000,"gok":true,"gft":3,"gsv":12,"glon":121234567,"glat":451234567,"gmsl":152340,"gha":1800,"gvn":12500,"gve":-320,"gvd":40,"gsp":12504,"ghm":1823456,"gsa":220,"ghd":9500}
+
+# git: iTOW GPS in ms
+# gok: fix GPS usabile per il singolo campione live
+# gft: fixType u-blox
+# gsv: satelliti usati
+# glon / glat: coordinate in unita native 1e-7 deg
+# gmsl / gha: quota MSL e accuratezza orizzontale in mm
+# gvn / gve / gvd / gsp / gsa: velocita e accuratezza velocita in mm/s
+# ghm / ghd: heading di moto e accuratezza heading in unita native 1e-5 deg
+
+# Calibrazione
+{"id":"7","cmd":"get_calibration"}
+{"id":"8","cmd":"calibrate","acc_offset_x":0.001000,"acc_offset_y":0.000000,"acc_offset_z":-0.012000,"gyro_offset_x_dps":0.030000,"gyro_offset_y_dps":-0.020000,"gyro_offset_z_dps":0.005000}
+{"id":"9","cmd":"run_calibration","samples":300,"delay_ms":5}
+{"id":"10","cmd":"clear_calibration"}
+
+# Riferimento
+{"id":"11","cmd":"get_reference"}
+{"id":"12","cmd":"set_reference","roll_zero_deg":1.250,"pitch_zero_deg":-0.400}
+{"id":"13","cmd":"set_zero","axes":"both"}
+{"id":"14","cmd":"clear_reference"}
+
+# OTA BLE
+{"id":"20","cmd":"get_ota_status"}
+{"id":"21","cmd":"ota_begin","size":813080}
+# response_tx:
+{"type":"response","id":"21","status":"accettato","cmd":"ota_begin"}
+
+# Invio chunk binari su ota_data_rx
+# Dimensione consigliata per chunk: <= 244 byte con MTU 247
+# Durante OTA il firmware sospende le notify su live_tx per massimizzare la banda disponibile
+
+{"id":"22","cmd":"ota_end"}
+# response_tx:
+{"type":"ota_status","status":"ok","ota_ble_enabled":true,"ota_busy":false,"ota_success":true,"reboot_scheduled":true,"ota_progress_percent":100,"expected_size":813080,"written_bytes":813080,"last_error":""}
+
+# Abort OTA
+{"id":"23","cmd":"ota_abort"}
+
+# Errori tipici
+# JSON malformato:
+{"type":"response","status":"errore","cmd":"unknown","error":"json_non_valido"}
+
+# Campo con tipo errato:
+{"type":"response","id":"24","status":"errore","cmd":"set_config","error":"il campo accel_lpf_enabled deve essere un booleano"}
+
+# OTA senza sessione aperta:
+{"type":"response","id":"25","status":"errore","cmd":"ota_end","error":"nessun_aggiornamento_ota_in_corso"}

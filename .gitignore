@@ -1,0 +1,39 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Local environment and secrets
+.env
+.env.*
+*.local
+local.properties
+
+# Android / Gradle
+APP/.gradle/
+APP/.kotlin/
+APP/.idea/
+APP/.claude/
+APP/build/
+APP/app/build/
+APP/app/.cxx/
+APP/app/.externalNativeBuild/
+APP/app/captures/
+APP/ridescope_app_build_state.properties
+
+# Firmware / PlatformIO
+FIRMWARE/.pio/
+FIRMWARE/.vscode/.browse.c_cpp.db*
+FIRMWARE/.vscode/c_cpp_properties.json
+FIRMWARE/.vscode/launch.json
+FIRMWARE/.vscode/ipch/
+FIRMWARE/extras/__pycache__/
+
+# Generated binaries and archives
+*.apk
+*.aab
+*.bin
+*.elf
+*.map
+*.zip
