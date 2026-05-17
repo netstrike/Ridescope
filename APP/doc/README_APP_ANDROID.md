@@ -41,6 +41,21 @@ Build release Play Console:
 - i file keystore `*.jks` e `*.keystore` sono esclusi dal versioning
 - output atteso: `app/build/outputs/bundle/release/app-release.aab`
 
+Script guidato:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build-play-release.ps1 -CreateKeystore
+```
+
+Usi successivi:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build-play-release.ps1
+```
+
+Lo script usa di default:
+- keystore: `%USERPROFILE%\RideScopeKeys\ridescope-upload.jks`
+- alias upload key: `ridescope-upload`
+- password lette da variabili ambiente o richieste a prompt
+
 ## Schermate presenti
 - Telemetria
 - Impostazioni
