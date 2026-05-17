@@ -15,6 +15,9 @@ on:
       - ".github/workflows/firmware.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build ESP32-C6 firmware
@@ -61,3 +64,15 @@ jobs:
             FIRMWARE/.pio/build/esp32c6/firmware.bin
             FIRMWARE/.pio/build/esp32c6/manifest.json
           if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/firmware-')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            .pio/build/esp32c6/firmware.bin \
+            .pio/build/esp32c6/manifest.json \
+            --title "RideScope firmware ${GITHUB_REF_NAME#firmware-}" \
+            --notes "Firmware RideScope build ${GITHUB_SHA}. Include firmware.bin e manifest.json per OTA." \
+            --verify-tag

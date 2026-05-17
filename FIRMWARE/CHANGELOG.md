@@ -4,6 +4,7 @@
 - aggiunto script PowerShell `scripts/build-firmware.ps1` per compilare usando il PlatformIO corretto anche quando `python` nel PATH non e compatibile
 - aggiunta workflow GitHub Actions per compilare il firmware ESP32-C6 e pubblicare `firmware.bin` / `manifest.json` come artifact
 - aggiunto `requirements.txt` firmware per rendere esplicita l'installazione PlatformIO nella CI GitHub
+- aggiunta pubblicazione GitHub Release automatica sui tag `firmware-*`, con allegati `firmware.bin` e `manifest.json`
 
 ## 2026-05-16
 - chiarito che il GPS, quando presente con stream e fix valido/fresco, puo essere usato come ausilio nei calcoli dei filtri

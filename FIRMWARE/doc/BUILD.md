@@ -54,6 +54,18 @@ Artifact pubblicati:
 
 Gli artifact GitHub sono il canale di build versionato. La distribuzione OTA verso l'app dovra usare il `firmware.bin` e il `manifest.json` provenienti da una build GitHub validata.
 
+Release firmware:
+- creando e pushando un tag `firmware-*`, la workflow crea anche una GitHub Release
+- la release contiene `firmware.bin` e `manifest.json`
+- esempio tag:
+
+```powershell
+git tag firmware-4.5.2
+git push origin firmware-4.5.2
+```
+
+Usare tag firmware solo per build gia validate localmente o da Actions.
+
 Punti importanti:
 - platform ESP32: `pioarduino/platform-espressif32`
 - board: `esp32-c6-devkitc-1`
