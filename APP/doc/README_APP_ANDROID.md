@@ -42,6 +42,7 @@ Build release Play Console:
 - ogni upload Play Console deve avere un `versionCode` mai usato prima
 - output Gradle canonico: `app/build/outputs/bundle/release/app-release.aab`
 - lo script guidato copia anche un AAB versionato, ad esempio `app-release-v1.0.440-code10440.aab`, da usare per evitare caricamenti duplicati
+- le release Play usano R8 con `proguard-android-optimize.txt`, minificazione codice e shrink delle risorse
 
 Script guidato:
 ```powershell
