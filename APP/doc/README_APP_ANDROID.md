@@ -39,7 +39,9 @@ Build release Play Console:
 - generare l'AAB con `./gradlew :app:bundleRelease`
 - configurare la firma release fuori da Git con `RIDESCOPE_RELEASE_STORE_FILE`, `RIDESCOPE_RELEASE_STORE_PASSWORD`, `RIDESCOPE_RELEASE_KEY_ALIAS`, `RIDESCOPE_RELEASE_KEY_PASSWORD`
 - i file keystore `*.jks` e `*.keystore` sono esclusi dal versioning
-- output atteso: `app/build/outputs/bundle/release/app-release.aab`
+- ogni upload Play Console deve avere un `versionCode` mai usato prima
+- output Gradle canonico: `app/build/outputs/bundle/release/app-release.aab`
+- lo script guidato copia anche un AAB versionato, ad esempio `app-release-v1.0.440-code10440.aab`, da usare per evitare caricamenti duplicati
 
 Script guidato:
 ```powershell
