@@ -460,6 +460,9 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
+            }
             if (rideScopeReleaseSigningEnabled) {
                 signingConfig = signingConfigs.getByName("ridescopeRelease")
             }
