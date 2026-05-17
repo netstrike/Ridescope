@@ -66,6 +66,12 @@ git push origin firmware-4.5.2
 
 Usare tag firmware solo per build gia validate localmente o da Actions.
 
+GitHub Pages firmware:
+- `.github/workflows/firmware-pages.yml` pubblica l'ultima build taggata `firmware-*` su GitHub Pages
+- URL stabile manifest OTA: `https://netstrike.github.io/Ridescope/firmware/manifest.json`
+- URL stabile binario OTA: `https://netstrike.github.io/Ridescope/firmware/firmware.bin`
+- in GitHub, configurare `Settings > Pages > Build and deployment > Source = GitHub Actions`
+
 Punti importanti:
 - platform ESP32: `pioarduino/platform-espressif32`
 - board: `esp32-c6-devkitc-1`

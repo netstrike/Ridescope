@@ -24,6 +24,7 @@ RideScope e un sistema per telemetria moto basato su:
 
 - Firmware: `.github/workflows/firmware.yml` compila PlatformIO su GitHub Actions e pubblica `firmware.bin` / `manifest.json` come artifact.
 - Tag firmware `firmware-*`: la workflow crea una GitHub Release con `firmware.bin` e `manifest.json` allegati.
+- GitHub Pages firmware: `https://netstrike.github.io/Ridescope/firmware/manifest.json` e `https://netstrike.github.io/Ridescope/firmware/firmware.bin`.
 
 ## Configurazione locale
 
