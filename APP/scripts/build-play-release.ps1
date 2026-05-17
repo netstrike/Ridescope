@@ -146,8 +146,10 @@ try {
     Write-Host $versionedBundlePath
     if (Test-Path $nativeSymbolsZipPath) {
         Write-Host ""
-        Write-Host "Simboli nativi da caricare in Play Console per la stessa versione:"
+        Write-Host "Simboli nativi generati per la stessa versione:"
         Write-Host $nativeSymbolsZipPath
+        Write-Host "Nota: la schermata di creazione release accetta solo AAB. Se Play Console espone l'upload simboli,"
+        Write-Host "carica questo ZIP dopo dall'App Bundle Explorer; altrimenti l'avviso e solo informativo."
     }
     Write-Host ""
     Write-Host "Carica questo file versionato in Play Console. Ogni nuovo upload deve avere un versionCode mai usato prima."
