@@ -9,6 +9,8 @@ Thumbs.db
 .env.*
 *.local
 local.properties
+*.jks
+*.keystore
 
 # Android / Gradle
 APP/.gradle/

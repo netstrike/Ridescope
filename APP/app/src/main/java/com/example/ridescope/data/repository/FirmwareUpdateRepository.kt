@@ -1,12 +1,7 @@
 package com.example.ridescope.data.repository
 
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.os.Build
-import android.provider.Settings
 import android.util.Log
-import androidx.core.content.FileProvider
 import com.example.ridescope.BuildConfig
 import com.example.ridescope.data.model.FirmwareInfo
 import com.example.ridescope.data.model.FirmwareUpdateAvailability
@@ -22,7 +17,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.ByteArrayOutputStream
-import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.StandardCharsets
@@ -43,16 +37,7 @@ class FirmwareUpdateRepository(
     fun synchronizeInstalledApplicationState(): FirmwareUpdateCheckState {
         val currentAppMetadata = currentAppMetadata()
         val previousState = appSettingsRepository.currentFirmwareUpdateCheckState()
-        val remoteAppManifest = previousState.toRemoteAppManifestInternal()
-        val appAssessment = remoteAppManifest?.let {
-            assessUpdateAvailability(
-                current = currentAppMetadata,
-                remote = it,
-                updateMessage = "Nuova build app disponibile",
-                currentMessage = "App allineata al manifest remoto",
-            )
-        }
-        val normalizedAppStatusMessage = appAssessment?.statusMessage ?: previousState.appStatusMessage
+        val normalizedAppStatusMessage = PlayManagedAppUpdateMessage
         val normalizedStatusMessage = when {
             previousState.statusMessage == previousState.appStatusMessage -> normalizedAppStatusMessage
             previousState.statusMessage == "Installazione app avviata" -> normalizedAppStatusMessage
@@ -63,7 +48,10 @@ class FirmwareUpdateRepository(
             appCurrentBuild = currentAppMetadata.build,
             appCurrentTimestamp = currentAppMetadata.timestamp,
             appCurrentProtocol = currentAppMetadata.protocol,
-            appAvailability = appAssessment?.availability ?: previousState.appAvailability,
+            appRemoteBuild = "",
+            appRemoteTimestamp = "",
+            appRemoteProtocol = "",
+            appAvailability = FirmwareUpdateAvailability.UpToDate,
             appStatusMessage = normalizedAppStatusMessage,
             statusMessage = normalizedStatusMessage,
             appUpdateInProgress = false,
@@ -94,12 +82,12 @@ class FirmwareUpdateRepository(
                 statusMessage = "Configurazione HTTP incompleta",
                 currentAppMetadata = currentAppMetadata,
                 remoteAppManifest = null,
-                appAvailability = FirmwareUpdateAvailability.Error,
-                appStatusMessage = "Configurazione HTTP incompleta",
+                appAvailability = FirmwareUpdateAvailability.UpToDate,
+                appStatusMessage = PlayManagedAppUpdateMessage,
             )
         } else {
             val firmwareOutcome = checkFirmwareAvailability(settings)
-            val appOutcome = checkAppAvailability(settings, currentAppMetadata)
+            val appOutcome = playManagedAppOutcome(currentAppMetadata)
             buildCombinedResult(
                 firmwareOutcome = firmwareOutcome,
                 appOutcome = appOutcome,
@@ -251,118 +239,23 @@ class FirmwareUpdateRepository(
     }
 
     suspend fun updateApplication(): FirmwareUpdateCheckState {
-        val settings = appSettingsRepository.currentFirmwareUpdateSettings().normalized()
         val currentAppMetadata = currentAppMetadata()
-        var workingState = appSettingsRepository.currentFirmwareUpdateCheckState().copy(
+        val workingState = appSettingsRepository.currentFirmwareUpdateCheckState().copy(
             updateInProgress = false,
             updateProgressPercent = 0,
             appUpdateInProgress = false,
             appUpdateProgressPercent = 0,
+            appCurrentBuild = currentAppMetadata.build,
+            appCurrentTimestamp = currentAppMetadata.timestamp,
+            appCurrentProtocol = currentAppMetadata.protocol,
+            appRemoteBuild = "",
+            appRemoteTimestamp = "",
+            appRemoteProtocol = "",
+            appAvailability = FirmwareUpdateAvailability.UpToDate,
+            appStatusMessage = PlayManagedAppUpdateMessage,
+            statusMessage = PlayManagedAppUpdateMessage,
         )
-
-        if (!settings.isConfigured()) {
-            return publishState(
-                workingState.copy(
-                    statusMessage = "Configurazione HTTP incompleta",
-                    appCurrentBuild = currentAppMetadata.build,
-                    appCurrentTimestamp = currentAppMetadata.timestamp,
-                    appCurrentProtocol = currentAppMetadata.protocol,
-                    appAvailability = FirmwareUpdateAvailability.Error,
-                    appStatusMessage = "Configurazione HTTP incompleta",
-                ),
-            )
-        }
-
-        return runCatching {
-            val remoteManifest = fetchAppManifest(settings)
-            val assessment = assessUpdateAvailability(
-                current = currentAppMetadata,
-                remote = remoteManifest,
-                updateMessage = "Nuova build app disponibile",
-                currentMessage = "App allineata al manifest remoto",
-            )
-            val comparisonState = workingState.copy(
-                lastCheckedAtEpochMs = System.currentTimeMillis(),
-                appCurrentBuild = currentAppMetadata.build,
-                appCurrentTimestamp = currentAppMetadata.timestamp,
-                appCurrentProtocol = currentAppMetadata.protocol,
-                appRemoteBuild = remoteManifest.build,
-                appRemoteTimestamp = remoteManifest.timestamp,
-                appRemoteProtocol = remoteManifest.protocol,
-                appAvailability = assessment.availability,
-                appStatusMessage = assessment.statusMessage,
-                statusMessage = assessment.statusMessage,
-            )
-
-            if (assessment.availability != FirmwareUpdateAvailability.UpdateAvailable) {
-                return@runCatching publishState(
-                    comparisonState.copy(
-                        appUpdateInProgress = false,
-                        appUpdateProgressPercent = 0,
-                    ),
-                )
-            }
-
-            if (!canRequestPackageInstalls()) {
-                openUnknownSourcesSettings()
-                return@runCatching publishState(
-                    comparisonState.copy(
-                        statusMessage = "Abilita l'installazione app per RideScope e riprova",
-                        appStatusMessage = "Abilita l'installazione app per RideScope e riprova",
-                        appUpdateInProgress = false,
-                        appUpdateProgressPercent = 0,
-                    ),
-                )
-            }
-
-            workingState = publishAppProgress(
-                baseState = comparisonState,
-                progressPercent = 0,
-                statusMessage = "Scaricamento APK remoto...",
-            )
-
-            val apkBytes = fetchAppBinary(settings) { bytesRead, totalBytes ->
-                val progress = scaledProgress(
-                    current = bytesRead,
-                    total = totalBytes,
-                    basePercent = 0,
-                    spanPercent = 90,
-                )
-                workingState = publishAppProgress(
-                    baseState = workingState,
-                    progressPercent = progress,
-                    statusMessage = formatTransferStatus("Scaricamento APK remoto", bytesRead, totalBytes),
-                )
-            }
-
-            workingState = publishAppProgress(
-                baseState = workingState,
-                progressPercent = 95,
-                statusMessage = "Preparazione installazione Android...",
-            )
-
-            val apkFile = persistAppInstaller(apkBytes)
-            launchAppInstaller(apkFile)
-
-            publishState(
-                workingState.copy(
-                    statusMessage = "Installazione app avviata",
-                    appStatusMessage = "APK scaricato, completa l'installazione Android",
-                    appUpdateInProgress = false,
-                    appUpdateProgressPercent = 100,
-                ),
-            )
-        }.getOrElse { error ->
-            publishState(
-                workingState.copy(
-                    statusMessage = error.message ?: "Aggiornamento app fallito",
-                    appAvailability = FirmwareUpdateAvailability.Error,
-                    appStatusMessage = error.message ?: "Aggiornamento app fallito",
-                    appUpdateInProgress = false,
-                    appUpdateProgressPercent = 0,
-                ),
-            )
-        }
+        return publishState(workingState)
     }
 
     private fun shouldCheckNow(
@@ -411,8 +304,8 @@ class FirmwareUpdateRepository(
             statusMessage = statusMessage,
             currentAppMetadata = currentAppMetadata(),
             remoteAppManifest = null,
-            appAvailability = FirmwareUpdateAvailability.Unknown,
-            appStatusMessage = "Controllo app non eseguito",
+            appAvailability = FirmwareUpdateAvailability.UpToDate,
+            appStatusMessage = PlayManagedAppUpdateMessage,
         )
     }
 
@@ -454,13 +347,6 @@ class FirmwareUpdateRepository(
         return parseFirmwareManifest(String(manifestContent, StandardCharsets.UTF_8))
     }
 
-    private suspend fun fetchAppManifest(settings: FirmwareUpdateSettings): ManifestMetadata {
-        val manifestContent = withContext(Dispatchers.IO) {
-            downloadFileOverHttp(settings.appManifestRemoteUrl())
-        }
-        return parseAppManifest(String(manifestContent, StandardCharsets.UTF_8))
-    }
-
     private suspend fun fetchFirmwareBinary(
         settings: FirmwareUpdateSettings,
         onProgress: (bytesRead: Long, totalBytes: Long?) -> Unit,
@@ -468,18 +354,6 @@ class FirmwareUpdateRepository(
         return withContext(Dispatchers.IO) {
             downloadFileOverHttp(
                 remoteUrl = settings.firmwareBinaryRemoteUrl(),
-                onProgress = onProgress,
-            )
-        }
-    }
-
-    private suspend fun fetchAppBinary(
-        settings: FirmwareUpdateSettings,
-        onProgress: (bytesRead: Long, totalBytes: Long?) -> Unit,
-    ): ByteArray {
-        return withContext(Dispatchers.IO) {
-            downloadFileOverHttp(
-                remoteUrl = settings.appBinaryRemoteUrl(),
                 onProgress = onProgress,
             )
         }
@@ -496,21 +370,6 @@ class FirmwareUpdateRepository(
         ).also { metadata ->
             if (metadata.build.isBlank() || metadata.timestamp.isBlank() || metadata.protocol.isBlank()) {
                 error("manifest.json remoto incompleto")
-            }
-        }
-    }
-
-    private fun parseAppManifest(rawJson: String): ManifestMetadata {
-        val root = json.parseToJsonElement(rawJson).jsonObject
-        val appRoot = root["ridescope"]?.jsonObject
-            ?: error("manifest.json remoto non contiene ridescope{}")
-        return ManifestMetadata(
-            build = appRoot.stringValue("build"),
-            timestamp = appRoot.stringValue("timestamp"),
-            protocol = appRoot.stringValue("protocol"),
-        ).also { metadata ->
-            if (metadata.build.isBlank() || metadata.timestamp.isBlank() || metadata.protocol.isBlank()) {
-                error("manifest.json remoto app incompleto")
             }
         }
     }
@@ -633,30 +492,12 @@ class FirmwareUpdateRepository(
         )
     }
 
-    private suspend fun checkAppAvailability(
-        settings: FirmwareUpdateSettings,
-        currentAppMetadata: ManifestMetadata,
-    ): CheckOutcome {
-        val remoteManifest = runCatching { fetchAppManifest(settings) }.getOrElse { error ->
-            return CheckOutcome(
-                current = currentAppMetadata,
-                remote = null,
-                availability = FirmwareUpdateAvailability.Error,
-                statusMessage = error.message ?: "Download manifest app fallito",
-                currentInfo = null,
-            )
-        }
-        val assessment = assessUpdateAvailability(
-            current = currentAppMetadata,
-            remote = remoteManifest,
-            updateMessage = "Nuova build app disponibile",
-            currentMessage = "App allineata al manifest remoto",
-        )
+    private fun playManagedAppOutcome(currentAppMetadata: ManifestMetadata): CheckOutcome {
         return CheckOutcome(
             current = currentAppMetadata,
-            remote = remoteManifest,
-            availability = assessment.availability,
-            statusMessage = assessment.statusMessage,
+            remote = null,
+            availability = FirmwareUpdateAvailability.UpToDate,
+            statusMessage = PlayManagedAppUpdateMessage,
             currentInfo = null,
         )
     }
@@ -671,8 +512,6 @@ class FirmwareUpdateRepository(
                 "Nuovi aggiornamenti disponibili per firmware e app"
             firmwareOutcome.availability == FirmwareUpdateAvailability.UpdateAvailable ->
                 "Nuova revisione firmware disponibile"
-            appOutcome.availability == FirmwareUpdateAvailability.UpdateAvailable ->
-                "Nuova build app disponibile"
             firmwareOutcome.availability == FirmwareUpdateAvailability.Error &&
                 appOutcome.availability == FirmwareUpdateAvailability.Error ->
                 "Controllo firmware e app fallito"
@@ -680,9 +519,8 @@ class FirmwareUpdateRepository(
                 firmwareOutcome.statusMessage
             appOutcome.availability == FirmwareUpdateAvailability.Error ->
                 appOutcome.statusMessage
-            firmwareOutcome.availability == FirmwareUpdateAvailability.UpToDate &&
-                appOutcome.availability == FirmwareUpdateAvailability.UpToDate ->
-                "Firmware e app allineati ai manifest remoti"
+            firmwareOutcome.availability == FirmwareUpdateAvailability.UpToDate ->
+                "Firmware allineato al manifest remoto"
             else -> "Controllo aggiornamenti completato"
         }
 
@@ -766,21 +604,6 @@ class FirmwareUpdateRepository(
         )
     }
 
-    private fun publishAppProgress(
-        baseState: FirmwareUpdateCheckState,
-        progressPercent: Int,
-        statusMessage: String,
-    ): FirmwareUpdateCheckState {
-        return publishState(
-            baseState.copy(
-                statusMessage = statusMessage,
-                appStatusMessage = statusMessage,
-                appUpdateInProgress = true,
-                appUpdateProgressPercent = progressPercent.coerceIn(0, 100),
-            ),
-        )
-    }
-
     private fun publishState(state: FirmwareUpdateCheckState): FirmwareUpdateCheckState {
         appSettingsRepository.updateFirmwareUpdateCheckState(
             state.copy(
@@ -789,53 +612,6 @@ class FirmwareUpdateRepository(
             ),
         )
         return appSettingsRepository.currentFirmwareUpdateCheckState()
-    }
-
-    private suspend fun persistAppInstaller(apkBytes: ByteArray): File {
-        return withContext(Dispatchers.IO) {
-            val updateDir = File(appContext.cacheDir, AppUpdateCacheDirectory)
-            if (!updateDir.exists() && !updateDir.mkdirs()) {
-                error("Impossibile creare la cache per l'aggiornamento app")
-            }
-            val apkFile = File(updateDir, AppApkFileName)
-            apkFile.outputStream().use { output ->
-                output.write(apkBytes)
-                output.flush()
-            }
-            apkFile
-        }
-    }
-
-    private fun canRequestPackageInstalls(): Boolean {
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||
-            appContext.packageManager.canRequestPackageInstalls()
-    }
-
-    private fun openUnknownSourcesSettings() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            return
-        }
-        val intent = Intent(
-            Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-            Uri.parse("package:${appContext.packageName}"),
-        ).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        appContext.startActivity(intent)
-    }
-
-    private fun launchAppInstaller(apkFile: File) {
-        val contentUri = FileProvider.getUriForFile(
-            appContext,
-            "${appContext.packageName}.fileprovider",
-            apkFile,
-        )
-        val installIntent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(contentUri, ApkMimeType)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        appContext.startActivity(installIntent)
     }
 
     private fun scaledProgress(
@@ -920,9 +696,7 @@ class FirmwareUpdateRepository(
         const val PostOtaVerificationAttempts = 8
         const val PostOtaInitialDelayMs = 2_500L
         const val PostOtaRetryDelayMs = 2_000L
-        const val ApkMimeType = "application/vnd.android.package-archive"
-        const val AppApkFileName = "ridescope.apk"
-        const val AppUpdateCacheDirectory = "app_updates"
+        const val PlayManagedAppUpdateMessage = "Aggiornamenti app gestiti da Google Play"
     }
 }
 

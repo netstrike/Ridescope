@@ -54,10 +54,7 @@ fun AppRoot(
 ) {
     var selectedPage by remember { mutableStateOf(RideScopePage.Telemetria) }
     val firmwareUpdateCheckState by appSettingsRepository.firmwareUpdateCheckState.collectAsState()
-    val updateAvailable = (
-        firmwareUpdateCheckState.availability == FirmwareUpdateAvailability.UpdateAvailable ||
-        firmwareUpdateCheckState.appAvailability == FirmwareUpdateAvailability.UpdateAvailable
-    )
+    val updateAvailable = firmwareUpdateCheckState.availability == FirmwareUpdateAvailability.UpdateAvailable
     val factory = remember(repository, phoneSensorRepository, appSettingsRepository, devicePowerRepository, rideRecordingRepository) {
         viewModelFactory {
             initializer {

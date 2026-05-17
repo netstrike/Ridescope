@@ -29,13 +29,17 @@ Output build locale:
 - `app/build/outputs/ridescope/manifest.json`
 - `app/build/outputs/apk/<variant>/ridescope.apk`
 
-Pubblicazione automatica:
-- dopo i task applicativi che producono o installano l'APK, RideScope copia via FTP `ridescope.apk` e `manifest.json`
-- repository remoto app: `ftp://192.168.1.3/ftp/ridescope/app`
-- ordine di upload: prima `ridescope.apk`, poi `manifest.json`
-- variabili ambiente di configurazione: `RIDESCOPE_APP_FTP_HOST`, `RIDESCOPE_APP_FTP_PORT`, `RIDESCOPE_APP_FTP_DIRECTORY`, `RIDESCOPE_APP_FTP_USER`, `RIDESCOPE_APP_FTP_PASSWORD`
-- se `RIDESCOPE_APP_FTP_USER` o `RIDESCOPE_APP_FTP_PASSWORD` non sono configurate, il publish FTP viene saltato
-- `RIDESCOPE_SKIP_APP_FTP_PUBLISH=1` permette di saltare il publish in build locali offline
+Distribuzione app:
+- il canale applicativo ufficiale e Google Play Console
+- package Android pubblico: `com.netstrike.ridescope`
+- l'app non scarica piu APK remoti e non richiede piu il permesso Android per installare pacchetti
+- il publish FTP app e disabilitato di default; si puo riattivare solo come percorso legacy impostando `RIDESCOPE_ENABLE_LEGACY_APP_FTP_PUBLISH=1`
+
+Build release Play Console:
+- generare l'AAB con `./gradlew :app:bundleRelease`
+- configurare la firma release fuori da Git con `RIDESCOPE_RELEASE_STORE_FILE`, `RIDESCOPE_RELEASE_STORE_PASSWORD`, `RIDESCOPE_RELEASE_KEY_ALIAS`, `RIDESCOPE_RELEASE_KEY_PASSWORD`
+- i file keystore `*.jks` e `*.keystore` sono esclusi dal versioning
+- output atteso: `app/build/outputs/bundle/release/app-release.aab`
 
 ## Schermate presenti
 - Telemetria
@@ -100,7 +104,7 @@ I picchi di roll, pitch, accelerazione e frenata sono gestiti localmente dall'ap
 - la pagina `Impostazioni` espone anche limiti locali dei gauge telemetria app-side: roll, pitch, accelerazione longitudinale e speed GPS
 - il gauge AY puo essere visualizzato in `g` oppure in `m*s^2`, con aggiornamento coerente di valore realtime e scala
 - la pagina `Impostazioni` espone anche un toggle app-side per mantenere lo schermo sempre acceso oppure lasciarlo gestire dal sistema
-- la pagina `Impostazioni` espone anche la configurazione FTP del repository firmware, un percorso FTP dedicato per i manifest e l'APK dell'app e l'intervallo di controllo
+- la pagina `Impostazioni` espone anche la configurazione HTTP del repository firmware e l'intervallo di controllo
 - la pagina `Aggiornamento` espone la UI operativa per verifica versioni, stato aggiornamento, progresso OTA e azioni `CONTROLLA ORA` / `UPD`
 - cambiando il limite del gauge pitch, l'app aggiorna sia le etichette scala sia l'ampiezza dell'arco
 - la pagina `Filtri` contiene i parametri tecnici dei filtri firmware
@@ -110,12 +114,10 @@ I picchi di roll, pitch, accelerazione e frenata sono gestiti localmente dall'ap
 - `response_tx` e `live_tx` sono notify BLE terminate da newline
 - la pagina `Diagnostica` non mostra piu metadati versione app/firmware: il riferimento canonico per build e protocollo e la pagina `Aggiornamento`
 - la pagina `Diagnostica` mostra anche `its`, `itc` e lo stato GNSS firmware/app dell'ultimo campione live ricevuto
-- il controllo aggiornamenti firmware avviene lato app confrontando i metadati correnti letti via BLE con il `manifest.json` remoto pubblicato sul repository FTP
-- lo stesso pulsante `CONTROLLA ORA` confronta anche la build locale dell'app con il `manifest.json` remoto pubblicato nel repository app, di default `ftp/ridescope/app`
-- quando il manifest remoto contiene una revisione piu nuova, l'app scarica `firmware.bin` dal repository FTP e lo trasferisce al dispositivo con `ota_begin -> chunk su ota_data_rx -> ota_end`
+- il controllo aggiornamenti firmware avviene lato app confrontando i metadati correnti letti via BLE con il `manifest.json` remoto pubblicato sul repository HTTP firmware
+- l'app mostra la build locale, ma gli aggiornamenti dell'app sono gestiti da Google Play
+- quando il manifest remoto contiene una revisione piu nuova, l'app scarica `firmware.bin` dal repository HTTP e lo trasferisce al dispositivo con `ota_begin -> chunk su ota_data_rx -> ota_end`
 - durante l'OTA BLE l'app usa `WRITE_NR` su `ota_data_rx` quando il firmware lo espone, ma con pacing piu conservativo e fallback automatico alle write con risposta se il client Android segnala backlog GATT; il drain resta compatibile con la coda firmware da `8` chunk
-- quando il manifest remoto dell'app contiene una build piu nuova, il pulsante `AGGIORNA APPLICAZIONE` scarica `ridescope.apk` dal repository FTP, lo salva in cache e apre l'installer Android sul device
-- se Android blocca il sideload, RideScope apre direttamente la schermata di sistema per abilitare l'installazione app per questa applicazione e poi richiede di riprovare
 - roll, pitch e AY usano solo il sensore esterno via firmware
 - velocita, trip e max speed preferiscono il GNSS compact del firmware; il GPS del telefono resta un fallback locale quando non c'e un fix firmware usabile
 - la pagina `Telemetria` include anche un modulo recording locale con export XML di posizione, velocita, altitudine, roll, pitch, accel, decel e riepilogo finale sessione

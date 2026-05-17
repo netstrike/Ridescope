@@ -59,7 +59,18 @@ val rideScopeAppFtpDirectory = providers.environmentVariable("RIDESCOPE_APP_FTP_
 val rideScopeAppFtpUsername = providers.environmentVariable("RIDESCOPE_APP_FTP_USER").orNull.orEmpty()
 val rideScopeAppFtpPassword = providers.environmentVariable("RIDESCOPE_APP_FTP_PASSWORD").orNull.orEmpty()
 val rideScopeAppFtpTlsModeRaw = providers.environmentVariable("RIDESCOPE_APP_FTP_TLS_MODE").orNull ?: "explicit"
+val rideScopeLegacyAppFtpPublishEnabled = providers.environmentVariable("RIDESCOPE_ENABLE_LEGACY_APP_FTP_PUBLISH").orNull == "1"
 val rideScopeSkipFtpPublish = providers.environmentVariable("RIDESCOPE_SKIP_APP_FTP_PUBLISH").orNull == "1"
+val rideScopeReleaseStoreFile = providers.environmentVariable("RIDESCOPE_RELEASE_STORE_FILE").orNull
+val rideScopeReleaseStorePassword = providers.environmentVariable("RIDESCOPE_RELEASE_STORE_PASSWORD").orNull
+val rideScopeReleaseKeyAlias = providers.environmentVariable("RIDESCOPE_RELEASE_KEY_ALIAS").orNull
+val rideScopeReleaseKeyPassword = providers.environmentVariable("RIDESCOPE_RELEASE_KEY_PASSWORD").orNull
+val rideScopeReleaseSigningEnabled = listOf(
+    rideScopeReleaseStoreFile,
+    rideScopeReleaseStorePassword,
+    rideScopeReleaseKeyAlias,
+    rideScopeReleaseKeyPassword,
+).all { !it.isNullOrBlank() }
 val rideScopeApkOutputRoot: Provider<Directory> = layout.buildDirectory.dir("outputs/apk")
 val rideScopeCanonicalApkName = "ridescope.apk"
 val rideScopeAppFtpTlsMode = when (rideScopeAppFtpTlsModeRaw.trim().lowercase()) {
@@ -421,7 +432,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.ridescope"
+        applicationId = "com.netstrike.ridescope"
         minSdk = 24
         targetSdk = 36
         versionCode = rideScopeAppBuildMetadata.versionCode
@@ -435,9 +446,23 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
 
+    signingConfigs {
+        if (rideScopeReleaseSigningEnabled) {
+            create("ridescopeRelease") {
+                storeFile = file(rideScopeReleaseStoreFile!!)
+                storePassword = rideScopeReleaseStorePassword
+                keyAlias = rideScopeReleaseKeyAlias
+                keyPassword = rideScopeReleaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
+            if (rideScopeReleaseSigningEnabled) {
+                signingConfig = signingConfigs.getByName("ridescopeRelease")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -498,6 +523,10 @@ val publishRideScopeArtifacts by tasks.registering {
     dependsOn(generateRideScopeManifest, syncRideScopeApkName)
 
     doLast {
+        if (!rideScopeLegacyAppFtpPublishEnabled) {
+            logger.lifecycle("Publish FTP RideScope app disabilitato: l'app viene distribuita tramite Google Play")
+            return@doLast
+        }
         if (rideScopeSkipFtpPublish) {
             logger.lifecycle("Publish FTP RideScope saltato da RIDESCOPE_SKIP_APP_FTP_PUBLISH=1")
             return@doLast
@@ -535,7 +564,9 @@ tasks.configureEach {
         Regex("^package[A-Z].*(Debug|Release)$").matches(name)
     ) {
         finalizedBy(syncRideScopeApkName)
-        finalizedBy(publishRideScopeArtifacts)
+        if (rideScopeLegacyAppFtpPublishEnabled) {
+            finalizedBy(publishRideScopeArtifacts)
+        }
     }
 }
 

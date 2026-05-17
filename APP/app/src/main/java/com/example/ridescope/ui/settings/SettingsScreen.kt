@@ -403,8 +403,7 @@ fun UpdateScreen(
     val scope = rememberCoroutineScope()
     val firmwareUpdateCheckState by appSettingsRepository.firmwareUpdateCheckState.collectAsState()
     val firmwareUpdateBusy = firmwareUpdateCheckInProgress ||
-        firmwareUpdateCheckState.updateInProgress ||
-        firmwareUpdateCheckState.appUpdateInProgress
+        firmwareUpdateCheckState.updateInProgress
 
     Box(
         modifier = Modifier
@@ -449,7 +448,7 @@ private fun FirmwareUpdateSettingsSection(
 ) {
     SectionCard(title = "Parametri aggiornamento") {
         Text(
-            "Configura i parametri del repository remoto usati dal controllo aggiornamenti firmware e applicazione.",
+            "Configura i parametri del repository remoto usati dal controllo aggiornamenti firmware.",
             style = MaterialTheme.typography.bodyMedium,
         )
         ConfigTextField(
@@ -464,12 +463,6 @@ private fun FirmwareUpdateSettingsSection(
             label = "firmware_http_directory",
         ) { value ->
             onFirmwareUpdateSettingsChange(firmwareUpdateSettings.copy(firmwareDirectory = value))
-        }
-        ConfigTextField(
-            value = firmwareUpdateSettings.appDirectory,
-            label = "app_http_directory",
-        ) { value ->
-            onFirmwareUpdateSettingsChange(firmwareUpdateSettings.copy(appDirectory = value))
         }
         ConfigDropdownField(
             value = formatFirmwareUpdateIntervalMinutes(firmwareUpdateSettings.checkIntervalMinutes),
@@ -522,25 +515,6 @@ private fun FirmwareUpdateActionsSection(
             }
             Unit
         }
-        val updateApplicationAction = {
-            scope.launch {
-                val result = firmwareUpdateRepository.updateApplication()
-                val popupType = when (result.appAvailability) {
-                    FirmwareUpdateAvailability.Error -> RideScopePopupType.Error
-                    FirmwareUpdateAvailability.UpdateAvailable -> RideScopePopupType.Warning
-                    FirmwareUpdateAvailability.UpToDate,
-                    FirmwareUpdateAvailability.Unknown,
-                    -> null
-                }
-                if (popupType != null) {
-                    snackbarHostState.showRideScopePopup(
-                        message = result.appStatusMessage,
-                        type = popupType,
-                    )
-                }
-            }
-            Unit
-        }
         Button(
             onClick = {
                 scope.launch {
@@ -550,7 +524,6 @@ private fun FirmwareUpdateActionsSection(
                     if (result != null) {
                         val popupType = popupTypeForUpdateCheck(
                             firmwareAvailability = result.availability,
-                            appAvailability = result.appAvailability,
                         )
                         if (popupType != null) {
                             snackbarHostState.showRideScopePopup(
@@ -593,11 +566,9 @@ private fun FirmwareUpdateActionsSection(
                 currentProtocol = firmwareUpdateCheckState.appCurrentProtocol,
                 remoteBuild = firmwareUpdateCheckState.appRemoteBuild,
                 remoteProtocol = firmwareUpdateCheckState.appRemoteProtocol,
-                hasUpdate = firmwareUpdateCheckState.appAvailability == FirmwareUpdateAvailability.UpdateAvailable,
+                hasUpdate = false,
                 updateActionEnabled = !firmwareUpdateBusy,
-                onUpdateClick = updateApplicationAction.takeIf {
-                    firmwareUpdateCheckState.appAvailability == FirmwareUpdateAvailability.UpdateAvailable
-                },
+                onUpdateClick = null,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -609,22 +580,13 @@ private fun FirmwareUpdateProgressDialog(
     firmwareUpdateCheckState: FirmwareUpdateCheckState,
 ) {
     val firmwareInProgress = firmwareUpdateCheckState.updateInProgress
-    val appInProgress = firmwareUpdateCheckState.appUpdateInProgress
-    if (!firmwareInProgress && !appInProgress) {
+    if (!firmwareInProgress) {
         return
     }
 
-    val title = if (firmwareInProgress) "Aggiornamento firmware" else "Aggiornamento applicazione"
-    val statusMessage = if (firmwareInProgress) {
-        firmwareUpdateCheckState.statusMessage
-    } else {
-        firmwareUpdateCheckState.appStatusMessage
-    }
-    val progressFraction = if (firmwareInProgress) {
-        firmwareUpdateCheckState.updateProgressPercent / 100f
-    } else {
-        firmwareUpdateCheckState.appUpdateProgressPercent / 100f
-    }
+    val title = "Aggiornamento firmware"
+    val statusMessage = firmwareUpdateCheckState.statusMessage
+    val progressFraction = firmwareUpdateCheckState.updateProgressPercent / 100f
 
     AlertDialog(
         onDismissRequest = {},
@@ -999,13 +961,10 @@ private fun formatFirmwareUpdateLastCheck(epochMs: Long?): String {
 
 private fun popupTypeForUpdateCheck(
     firmwareAvailability: FirmwareUpdateAvailability,
-    appAvailability: FirmwareUpdateAvailability,
 ): RideScopePopupType? {
     return when {
-        firmwareAvailability == FirmwareUpdateAvailability.Error ||
-            appAvailability == FirmwareUpdateAvailability.Error -> RideScopePopupType.Error
-        firmwareAvailability == FirmwareUpdateAvailability.UpdateAvailable ||
-            appAvailability == FirmwareUpdateAvailability.UpdateAvailable -> RideScopePopupType.Warning
+        firmwareAvailability == FirmwareUpdateAvailability.Error -> RideScopePopupType.Error
+        firmwareAvailability == FirmwareUpdateAvailability.UpdateAvailable -> RideScopePopupType.Warning
         else -> null
     }
 }
