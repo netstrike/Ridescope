@@ -404,14 +404,17 @@ val generateRideScopeManifest by tasks.registering {
     val manifestJson = """
         {
           "ridescope": {
-            "build": "${rideScopeAppBuildMetadata.build}",
+            "build": "${rideScopeAppBuildMetadata.versionCode}",
+            "version_code": ${rideScopeAppBuildMetadata.versionCode},
+            "version_name": "${rideScopeAppBuildMetadata.build}",
             "timestamp": "${rideScopeAppBuildMetadata.timestamp}",
             "protocol": "${rideScopeAppBuildMetadata.protocol}"
           }
         }
     """.trimIndent()
 
-    inputs.property("ridescopeBuild", rideScopeAppBuildMetadata.build)
+    inputs.property("ridescopeBuild", rideScopeAppBuildMetadata.versionCode)
+    inputs.property("ridescopeVersionName", rideScopeAppBuildMetadata.build)
     inputs.property("ridescopeTimestamp", rideScopeAppBuildMetadata.timestamp)
     inputs.property("ridescopeProtocol", rideScopeAppBuildMetadata.protocol)
     outputs.files(rideScopeManifestAssetFile, rideScopeManifestOutputFile)

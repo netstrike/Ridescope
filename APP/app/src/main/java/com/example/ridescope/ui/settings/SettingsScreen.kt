@@ -543,35 +543,19 @@ private fun FirmwareUpdateActionsSection(
             text = "Ultimo controllo: ${formatFirmwareUpdateLastCheck(firmwareUpdateCheckState.lastCheckedAtEpochMs)}",
             style = MaterialTheme.typography.bodyMedium,
         )
-        Row(
+        FirmwareUpdateMetadataCard(
+            title = "Firmware",
+            currentBuild = firmwareUpdateCheckState.currentBuild,
+            currentProtocol = firmwareUpdateCheckState.currentProtocol,
+            remoteBuild = firmwareUpdateCheckState.remoteBuild,
+            remoteProtocol = firmwareUpdateCheckState.remoteProtocol,
+            hasUpdate = firmwareUpdateCheckState.availability == FirmwareUpdateAvailability.UpdateAvailable,
+            updateActionEnabled = !firmwareUpdateBusy,
+            onUpdateClick = updateFirmwareAction.takeIf {
+                firmwareUpdateCheckState.availability == FirmwareUpdateAvailability.UpdateAvailable
+            },
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            FirmwareUpdateMetadataCard(
-                title = "Firmware",
-                currentBuild = firmwareUpdateCheckState.currentBuild,
-                currentProtocol = firmwareUpdateCheckState.currentProtocol,
-                remoteBuild = firmwareUpdateCheckState.remoteBuild,
-                remoteProtocol = firmwareUpdateCheckState.remoteProtocol,
-                hasUpdate = firmwareUpdateCheckState.availability == FirmwareUpdateAvailability.UpdateAvailable,
-                updateActionEnabled = !firmwareUpdateBusy,
-                onUpdateClick = updateFirmwareAction.takeIf {
-                    firmwareUpdateCheckState.availability == FirmwareUpdateAvailability.UpdateAvailable
-                },
-                modifier = Modifier.weight(1f),
-            )
-            FirmwareUpdateMetadataCard(
-                title = "App",
-                currentBuild = firmwareUpdateCheckState.appCurrentBuild,
-                currentProtocol = firmwareUpdateCheckState.appCurrentProtocol,
-                remoteBuild = firmwareUpdateCheckState.appRemoteBuild,
-                remoteProtocol = firmwareUpdateCheckState.appRemoteProtocol,
-                hasUpdate = false,
-                updateActionEnabled = !firmwareUpdateBusy,
-                onUpdateClick = null,
-                modifier = Modifier.weight(1f),
-            )
-        }
+        )
     }
 }
 

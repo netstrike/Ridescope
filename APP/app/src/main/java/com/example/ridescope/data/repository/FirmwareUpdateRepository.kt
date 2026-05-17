@@ -87,10 +87,9 @@ class FirmwareUpdateRepository(
             )
         } else {
             val firmwareOutcome = checkFirmwareAvailability(settings)
-            val appOutcome = playManagedAppOutcome(currentAppMetadata)
-            buildCombinedResult(
+            buildFirmwareCheckResult(
                 firmwareOutcome = firmwareOutcome,
-                appOutcome = appOutcome,
+                currentAppMetadata = currentAppMetadata,
             )
         }
 
@@ -492,33 +491,15 @@ class FirmwareUpdateRepository(
         )
     }
 
-    private fun playManagedAppOutcome(currentAppMetadata: ManifestMetadata): CheckOutcome {
-        return CheckOutcome(
-            current = currentAppMetadata,
-            remote = null,
-            availability = FirmwareUpdateAvailability.UpToDate,
-            statusMessage = PlayManagedAppUpdateMessage,
-            currentInfo = null,
-        )
-    }
-
-    private fun buildCombinedResult(
+    private fun buildFirmwareCheckResult(
         firmwareOutcome: CheckOutcome,
-        appOutcome: CheckOutcome,
+        currentAppMetadata: ManifestMetadata,
     ): FirmwareUpdateCheckState {
         val overallStatusMessage = when {
-            firmwareOutcome.availability == FirmwareUpdateAvailability.UpdateAvailable &&
-                appOutcome.availability == FirmwareUpdateAvailability.UpdateAvailable ->
-                "Nuovi aggiornamenti disponibili per firmware e app"
             firmwareOutcome.availability == FirmwareUpdateAvailability.UpdateAvailable ->
                 "Nuova revisione firmware disponibile"
-            firmwareOutcome.availability == FirmwareUpdateAvailability.Error &&
-                appOutcome.availability == FirmwareUpdateAvailability.Error ->
-                "Controllo firmware e app fallito"
             firmwareOutcome.availability == FirmwareUpdateAvailability.Error ->
                 firmwareOutcome.statusMessage
-            appOutcome.availability == FirmwareUpdateAvailability.Error ->
-                appOutcome.statusMessage
             firmwareOutcome.availability == FirmwareUpdateAvailability.UpToDate ->
                 "Firmware allineato al manifest remoto"
             else -> "Controllo aggiornamenti completato"
@@ -529,10 +510,10 @@ class FirmwareUpdateRepository(
             remoteManifest = firmwareOutcome.remote,
             availability = firmwareOutcome.availability,
             statusMessage = overallStatusMessage,
-            currentAppMetadata = appOutcome.current,
-            remoteAppManifest = appOutcome.remote,
-            appAvailability = appOutcome.availability,
-            appStatusMessage = appOutcome.statusMessage,
+            currentAppMetadata = currentAppMetadata,
+            remoteAppManifest = null,
+            appAvailability = FirmwareUpdateAvailability.UpToDate,
+            appStatusMessage = PlayManagedAppUpdateMessage,
         )
     }
 
@@ -565,7 +546,7 @@ class FirmwareUpdateRepository(
 
     private fun currentAppMetadata(): ManifestMetadata {
         return ManifestMetadata(
-            build = BuildConfig.RIDESCOPE_BUILD,
+            build = BuildConfig.VERSION_CODE.toString(),
             timestamp = BuildConfig.RIDESCOPE_BUILD_TIMESTAMP,
             protocol = BuildConfig.RIDESCOPE_PROTOCOL,
         )
