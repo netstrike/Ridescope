@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-05-16
+- chiarito che il GPS, quando presente con stream e fix valido/fresco, puo essere usato come ausilio nei calcoli dei filtri
+- aggiornato il fallback esplicito a modalita IMU-only quando GPS o fix non sono disponibili
+- allineata la documentazione operativa e architetturale alla pipeline IMU-first con ausilio GNSS opzionale
 - preparato il firmware per il versionamento pubblico disabilitando il publish FTPS automatico di default
 - rimosse le credenziali FTP di default da `platformio.ini`; le credenziali devono essere fornite tramite variabili ambiente
 

@@ -2,11 +2,12 @@
 
 ## Scopo
 Il firmware implementa una pipeline compatta per la stima dell'inclinazione della moto a partire dal sensore LSM6DSOX, con trasporto applicativo solo BLE.
-Una UART dedicata per un modulo GNSS esterno puo essere configurata a bordo, ma i dati GPS non entrano nella pipeline firmware attuale.
+Una UART dedicata per un modulo GNSS esterno puo essere configurata a bordo; quando il GPS e presente, streamma e ha un fix valido/fresco, la velocita GNSS puo entrare nella pipeline filtri come ausilio opzionale.
+Se il GPS non e disponibile, la pipeline resta IMU-only.
 
 ## Flusso generale
 ```text
-LSM6DSOX + timestamp hardware + temperatura interna -> calibrazione sensore -> remap frame sensore->veicolo -> prefiltri -> stima roll/pitch -> zero riferimento -> telemetria BLE / OTA BLE
+LSM6DSOX + timestamp hardware + temperatura interna (+ GPS valido opzionale) -> calibrazione sensore -> remap frame sensore->veicolo -> prefiltri -> stima roll/pitch -> zero riferimento -> telemetria BLE / OTA BLE
 ```
 
 ## Moduli e responsabilita
@@ -38,8 +39,8 @@ Gestisce la configurazione runtime del `SAM-M10Q`:
 - impostazione `10 Hz`, `UBX-NAV-PVT`, modello dinamico `Automotive`
 - selezione runtime delle costellazioni per sostenere `10 Hz`
 - parsing binario dei frame `UBX-NAV-PVT`
-- mantenimento dell'ultimo fix GNSS per sola diagnostica tecnica
-- nessun uso dei dati GPS in filtri o nel payload `live`
+- mantenimento dell'ultimo fix GNSS per diagnostica, payload `live` e ausilio opzionale ai filtri
+- validazione del fix prima di esporre `gps_usable` / `gok` e prima di produrre `GpsAidData`
 
 ### `filters.*`
 Implementa la stima inclinazione:
@@ -47,6 +48,7 @@ Implementa la stima inclinazione:
 - low-pass accelerometro
 - low-pass giroscopio
 - calcolo `dt` prioritariamente dal timestamp hardware IMU, con fallback a `millis()`
+- uso opzionale della velocita GPS per correzione centripeta e rilevamento stasi, solo se il fix GNSS e valido/fresco
 - correzione lenta del bias residuo gyro in condizioni quasi statiche
 - calcolo angoli da accelerometro
 - stima semplificata dell'accelerazione longitudinale
@@ -167,7 +169,7 @@ Il default corrente coincide con l'orientamento storico:
 Il remap fisico del sensore avviene solo tramite la tripletta `body_*_axis`.
 
 ## Politica firmware / app
-- nel firmware devono restare solo misura, trasporto BLE e OTA
-- la UART GPS opzionale e ammessa per configurazione tecnica del ricevitore e parser diagnostico minimo, ma senza logica GPS applicativa
-- UX, GPS, dati viaggio, log sessione e analisi restano nell'app
+- nel firmware devono restare misura, ausilio GPS opzionale ai filtri, trasporto BLE e OTA
+- la UART GPS opzionale e ammessa per configurazione tecnica del ricevitore, parser `UBX-NAV-PVT`, diagnostica e ausilio opzionale ai filtri quando il fix e valido/fresco
+- UX, mappe, dati viaggio, log sessione e analisi restano nell'app
 - non reintrodurre Wi-Fi, HTTP o WebSocket senza una nuova decisione architetturale esplicita

@@ -8,14 +8,14 @@ Questo file serve a chi modifica il progetto in seguito per capire rapidamente:
 
 ## Stato attuale del progetto
 Il firmware e gia stato portato a questa architettura:
-- solo logica di inclinazione; il firmware puo configurare tecnicamente un GPS esterno e decodificare `UBX-NAV-PVT` per sola diagnostica tecnica, ma non deve usarne i dati nella logica applicativa
+- logica di inclinazione IMU-first; il firmware puo configurare tecnicamente un GPS esterno e decodificare `UBX-NAV-PVT`; se il GPS e presente, streamma e ha un fix valido/fresco, puo usarne la velocita come ausilio nei calcoli dei filtri
 - hardware target: ESP32-C6FH8 + breakout Adafruit LSM6DSOX
 - modulo GNSS opzionale tipo `SAM-M10Q` su `GPIO19` RX da `TX GPS` e `GPIO20` TX verso `RX GPS`, configurato a runtime via UBX su `115200` e `10 Hz`
 - LED RGB onboard usato come indicatore locale di stato firmware
 - trasporto applicativo solo `Bluetooth LE`
 - pairing obbligatorio con passkey statica
 - telemetria live sempre `compact`, inviata su characteristic `notify`
-- il payload `live` include ora anche un sottoinsieme compatto di dati GPS dal parser `UBX-NAV-PVT`, senza introdurre logica di percorso o fusioni GPS nel firmware
+- il payload `live` include ora anche un sottoinsieme compatto di dati GPS dal parser `UBX-NAV-PVT`; la pipeline filtri puo usare il GPS solo come ausilio opzionale quando `GpsAidData.valid` e true
 - OTA solo via BLE a chunk, nessun supporto Wi-Fi / HTTP / WebSocket
 - configurazione persistente in NVS
 - mappa completa degli assi sensore persistente e configurabile via protocollo, con default `body_lateral_axis=+x`, `body_longitudinal_axis=+y`, `body_vertical_axis=+z`
@@ -24,10 +24,10 @@ Il firmware e gia stato portato a questa architettura:
 - documentazione in italiano
 
 ## Decisioni architetturali gia prese
-1. **Niente logica GPS nel firmware**
-   Il firmware non deve calcolare nulla usando GPS e non deve gestire dati di percorso.
-   E consentita la configurazione tecnica del ricevitore, il parsing tecnico minimo di `UBX-NAV-PVT`, l'esposizione di stato diagnostico su `status` e la pubblicazione dei campi GPS compact nel `live`.
-   Non sono ammessi uso del GPS nei filtri di inclinazione, logica di percorso, salvataggio tracce o telemetria GPS applicativa oltre i campi compact documentati.
+1. **GPS opzionale nei calcoli**
+   Il firmware puo usare il GPS nei calcoli dei filtri solo quando il modulo e presente, lo stream `UBX-NAV-PVT` e fresco e il fix e valido/usabile.
+   Quando il GPS manca, non e connesso, non streamma o il fix non e valido, la pipeline deve degradare automaticamente a IMU-only senza errori applicativi.
+   Non sono ammessi logica di percorso, salvataggio tracce, mappe o UX GPS nel firmware: questi restano nell'app.
 
 2. **Non programmare automaticamente OTP del GPS**
    Il `high CPU clock` del `SAM-M10Q` descritto dal manuale u-blox richiede una scrittura `OTP` permanente.
@@ -134,9 +134,9 @@ Aggiorna sempre:
 - `AGENTS.md` se cambia il perimetro logico
 
 ## Regole pratiche da rispettare
-- Non reintrodurre GPS, velocita, mappe o log di viaggio nel firmware.
-- Il GPS puo essere parsato solo per stato tecnico e diagnostica minima; non usarlo nei calcoli di roll/pitch o nel payload `live` senza una nuova decisione architetturale.
-- Il GPS puo essere esposto nel `live` solo nel sottoinsieme compact documentato; non usarlo comunque nei calcoli di roll/pitch o per introdurre logiche di percorso nel firmware.
+- Non reintrodurre mappe o log di viaggio nel firmware.
+- Il GPS puo essere parsato per stato tecnico, campi compact live e ausilio opzionale ai filtri quando il fix e valido/fresco.
+- Il GPS puo essere esposto nel `live` solo nel sottoinsieme compact documentato e puo influenzare i calcoli solo attraverso dati validati come `GpsAidData`.
 - I campi GPS nel `live` sono sempre presenti nello schema corrente; l'app deve usare `gok` nel `live` o `gps_usable` nello `status` per capire se il fix corrente e davvero usabile.
 - Non aggiungere dipendenze pesanti se non strettamente necessarie.
 - Mantieni il parser JSON coerente con il protocollo corrente.

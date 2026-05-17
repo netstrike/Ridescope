@@ -65,7 +65,7 @@ GND             ->   GND
 - Non collegare `3V3(OUT)` del micro al pin `3Vo` del breakout Adafruit: `3Vo` e un'uscita del regolatore del breakout, non l'ingresso di alimentazione.
 - Il breakout Adafruit accetta alimentazione su `Vin`; con questo progetto la scelta naturale resta `3V3(OUT) -> Vin`.
 - Il firmware usa il solo sensore `LSM6DSOX` via I2C. I pin opzionali di interrupt o configurazione indirizzo non sono necessari per il funzionamento base.
-- Se colleghi un GPS UART esterno, il firmware prova il bootstrap del `SAM-M10Q` sul baudrate factory tipico, lo riconfigura poi a `115200` con output `UBX-NAV-PVT` a `10 Hz` e ne decodifica i frame per sola diagnostica tecnica.
+- Se colleghi un GPS UART esterno, il firmware prova il bootstrap del `SAM-M10Q` sul baudrate factory tipico, lo riconfigura poi a `115200` con output `UBX-NAV-PVT` a `10 Hz` e ne decodifica i frame per diagnostica, telemetria compact e ausilio opzionale ai filtri quando il fix e valido/fresco.
 - Il firmware non programma automaticamente il `high CPU clock` OTP del modulo, perche sarebbe una modifica permanente del ricevitore.
 - L'indirizzo I2C atteso dal firmware per la IMU e `0x6A` oppure `0x6B`. Il breakout Adafruit usa di default `0x6A` per accel/gyro; `ADAG` serve solo se vuoi cambiare indirizzo.
 

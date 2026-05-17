@@ -246,6 +246,66 @@ diff --git a/src/comm_protocol.cpp b/src/comm_protocol.cpp
          json += runtimeState.imuReady ? "true" : "false";
 ```
 
+## 2026-05-16 - Uso GPS opzionale nei filtri
+
+```diff
+diff --git a/src/inclinometro_esp32.ino b/src/inclinometro_esp32.ino
+@@
++    // Converte l'ultimo fix GNSS in ausilio cinematico per i filtri.
++    // Se il GPS non e presente, non sta streamando o il fix non e valido,
++    // restituisce valid=false e la pipeline resta IMU-only.
++    GpsAidData makeGpsAidFromCurrentFix()
++    {
++        GpsFixData gpsFix {};
++        GpsAidData gpsAid {};
++        const bool hasFix = Gps::readFix(gpsFix);
++        if (hasFix && Gps::streaming() && gpsFix.valid && Gps::fixAgeMs() < GPS_FIX_STALE_TIMEOUT_MS)
++        {
++            const float groundSpeedMs = gpsFix.groundSpeedMmS > 0
++                ? gpsFix.groundSpeedMmS * 0.001f
++                : 0.0f;
++            gpsAid.speedMs = groundSpeedMs;
++            gpsAid.valid = true;
++        }
++        return gpsAid;
++    }
+@@
+-    // Aggiorna i dati GPS per la pipeline filtri (sensor task su Core1).
++    // Aggiorna i dati GPS opzionali per la pipeline filtri.
+@@
+-    // il sensor task degrada automaticamente al comportamento IMU-only senza nessuna modifica.
++    // In ogni altro caso gpsAid.valid resta false e il sensor task lavora in modalita IMU-only.
+@@
+-        GpsFixData gpsFix {};
+-        GpsAidData newGpsAid {};
+-        const bool hasFix = Gps::readFix(gpsFix);
+-        if (hasFix && Gps::streaming() && gpsFix.gnssFixOk && !gpsFix.invalidLlh &&
+-            Gps::fixAgeMs() < GPS_FIX_STALE_TIMEOUT_MS)
+-        {
+-            newGpsAid.speedMs = gpsFix.groundSpeedMmS * 0.001f;
+-            newGpsAid.valid = true;
+-        }
++        const GpsAidData newGpsAid = makeGpsAidFromCurrentFix();
+
+diff --git a/src/filters.h b/src/filters.h
+@@
+-    // la pipeline degrada automaticamente al comportamento IMU-only senza effetti collaterali.
++    // quando valid=false la pipeline resta IMU-only.
+
+diff --git a/src/types.h b/src/types.h
+@@
+-    // Dati GPS validati e pronti per l'uso nella pipeline filtri.
++    // Dati GPS validati e pronti per l'uso opzionale nella pipeline filtri.
+@@
+-    // in quel caso speedMs viene ignorato e la pipeline funziona come senza GPS.
++    // in quel caso speedMs viene ignorato e la pipeline funziona come IMU-only.
+
+diff --git a/src/filters.cpp b/src/filters.cpp
+@@
+-        // non viene applicata e la pipeline si comporta esattamente come senza GPS.
++        // non viene applicata e la pipeline si comporta esattamente come IMU-only.
+```
+
 ## 2026-03-31 - Stato GPS usabile per l'app e rimozione live_includes_gps
 ```diff
 diff --git a/src/comm_shared.h b/src/comm_shared.h

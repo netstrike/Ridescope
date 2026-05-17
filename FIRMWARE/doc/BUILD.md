@@ -107,6 +107,7 @@ Questo permette di preservare dopo gli aggiornamenti:
 - `get_info`, `get_status` e telemetria `live_tx` funzionanti
 - se il GPS UART e collegato, devono comparire i log tecnici di configurazione del `SAM-M10Q` e del rilevamento stream `UBX-NAV-PVT`
 - con GPS collegato, `get_status` deve poter mostrare `gps_present`, `gps_configured` e poi `gps_streaming`
+- con fix GPS valido, `gps_usable` nello status e `gok` nel live devono diventare `true`; solo in questa condizione la velocita GPS puo essere usata come ausilio ai filtri
 - se la IMU reale e collegata, `imu_ready = true`
 - `i2c_address` coerente con `0x6a` o `0x6b`
 - se durante una prova stacchi la IMU, `imu_ready` deve scendere a `false`, `i2c_address` tornare a `0x00` e il firmware deve tentare il recovery automatico quando il sensore viene ricollegato

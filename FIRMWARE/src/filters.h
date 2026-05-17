@@ -14,6 +14,6 @@ namespace Filters
     // e propagando nel live anche timestamp e temperatura IMU
     // dopo il remap nel frame veicolo canonico.
     // gpsAid può essere un GpsAidData con valid=false se il GPS non è disponibile:
-    // la pipeline degrada automaticamente al comportamento IMU-only senza effetti collaterali.
+    // quando valid=false la pipeline resta IMU-only.
     void update(const AppConfig& config, const RawImuData& imuData, const ReferenceData& reference, const GpsAidData& gpsAid, FilterState& state, RuntimeState& runtimeState);
 }

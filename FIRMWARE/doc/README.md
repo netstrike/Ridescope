@@ -1,8 +1,9 @@
 # Firmware ESP32 inclinometro moto
 
-Firmware dedicato solo alla misura di roll, pitch e accelerazione longitudinale semplificata.
-GPS, mappe, log viaggio e logiche UX devono restare nell'app.
-Il firmware configura a boot un modulo GNSS esterno tipo `SAM-M10Q`, ne decodifica `UBX-NAV-PVT` e pubblica un sottoinsieme compact dei dati GPS nel payload `live`, senza usare il GPS nella logica applicativa di inclinazione.
+Firmware dedicato alla misura di roll, pitch e accelerazione longitudinale semplificata.
+Mappe, log viaggio e logiche UX devono restare nell'app.
+Il firmware configura a boot un modulo GNSS esterno tipo `SAM-M10Q`, ne decodifica `UBX-NAV-PVT`, pubblica un sottoinsieme compact dei dati GPS nel payload `live` e, quando il GPS e presente con fix valido/fresco, puo usare la velocita GNSS come ausilio nei calcoli dei filtri.
+Se il GPS non e presente, non e connesso o non ha un fix valido, la pipeline degrada automaticamente a IMU-only.
 
 ## Hardware di riferimento
 - MCU / board: Waveshare ESP32-C6 Mini Development Board / ESP32-C6-Zero
@@ -18,6 +19,7 @@ Il firmware si occupa solo di:
 - calibrazione sensore
 - rimappatura assi sensore nel frame veicolo
 - stima di roll e pitch
+- ausilio GPS opzionale ai filtri quando il fix GNSS e valido e fresco
 - zero meccanico di riferimento
 - telemetria live
 - configurazione tecnica dei filtri
@@ -57,9 +59,10 @@ Il firmware riserva una UART dedicata per un modulo GNSS esterno tipo `SAM-M10Q`
 - costellazioni runtime usate: `GPS + Galileo`, con `QZSS`/`SBAS` coerenti con GPS
 - output `NMEA` disabilitato sulla UART del GPS
 
-Limiti attuali:
-- nessun uso dei dati GPS nei filtri di inclinazione
-- nessun calcolo firmware basato su GPS
+Comportamento GPS nei calcoli:
+- il GPS puo essere usato dai filtri solo quando `gps_usable`/`gok` indicano un fix valido e lo stream e fresco
+- se il GPS non e presente, non streamma o il fix e scaduto, i filtri lavorano in modalita IMU-only
+- il firmware non gestisce mappe, percorso, log viaggio o UX GPS
 - il firmware espone stato tecnico GNSS nel payload `status` e un sottoinsieme compact nel payload `live`
 - la seriale USB resta riservata ai log tecnici del firmware
 
@@ -160,6 +163,7 @@ Note:
 - internamente il `dt` dei filtri e la `sampleRateHz` usano in modo prioritario lo stesso timestamp hardware, con fallback a `millis()` se il campione non porta un timestamp valido
 - `itc` descrive la temperatura interna del package IMU, non una misura ambientale calibrata
 - i campi GPS del `live` sono pubblicati nelle unita native `UBX-NAV-PVT` per minimizzare conversioni e ambiguita lato app
+- quando il fix GPS del campione e valido, la velocita GNSS puo essere usata internamente come ausilio per correzione centripeta e rilevamento di stasi; quando non e valida viene ignorata
 - durante un OTA in corso il firmware sospende le notify su `live_tx` per non sottrarre banda al trasferimento firmware
 
 ## Frame veicolo e mappa assi sensore
@@ -251,6 +255,7 @@ La seriale resta solo tecnica e puo includere eventi BLE di servizio come:
 - `gps_streaming` indica se il firmware sta ricevendo frame `UBX-NAV-PVT` recenti
 - `gps_usable` nello `status` indica se l'ultimo fix GPS e valido e usabile in quel momento
 - `gok` nel `live` indica se i dati GPS del singolo campione sono validi e usabili lato app
+- solo in questa condizione il firmware puo usare la velocita GPS come ausilio ai filtri; in tutti gli altri casi resta IMU-only
 - `gps_fix_type`, `gps_num_sv` e `gps_fix_age_ms` sono campi diagnostici tecnici di supporto
 - se il GPS non e presente o non sta streamando, i campi GPS nel `live` restano comunque presenti ma valgono `0` o `false`
 - in caso di fault I2C runtime, `imu_ready` / `ir` scendono a `false`, `i2c_address` torna a `0x00` e il firmware tenta automaticamente la reinizializzazione della IMU

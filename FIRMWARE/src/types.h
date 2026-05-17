@@ -110,10 +110,10 @@ struct GpsFixData
 
 struct GpsAidData
 {
-    // Dati GPS validati e pronti per l'uso nella pipeline filtri.
+    // Dati GPS validati e pronti per l'uso opzionale nella pipeline filtri.
     // Separati da GpsFixData per minimizzare il dato trasmesso tra task via mutex.
     // valid è false quando il GPS non è connesso, non ha fix, o il fix è scaduto:
-    // in quel caso speedMs viene ignorato e la pipeline funziona come senza GPS.
+    // in quel caso speedMs viene ignorato e la pipeline funziona come IMU-only.
     float speedMs = 0.0f;
     bool valid = false;
 };

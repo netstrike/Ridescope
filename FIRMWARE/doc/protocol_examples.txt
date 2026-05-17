@@ -42,6 +42,7 @@
 # gps_configured indica se il bootstrap/configurazione UBX del modulo e andato a buon fine.
 # gps_streaming indica se il firmware riceve frame NAV-PVT recenti.
 # gps_usable indica se l'ultimo fix GPS e valido e usabile in quel momento.
+# Solo quando e true il firmware puo usare la velocita GPS come ausilio opzionale ai filtri.
 
 # Live on demand
 # ts resta il timestamp runtime firmware in ms.
@@ -56,7 +57,7 @@
 {"ts":123456,"its":5021120,"r":12.34,"p":47.50,"rr":13.10,"rp":47.50,"ay":0.750,"itc":31.25,"ir":true,"git":345678000,"gok":true,"gft":3,"gsv":12,"glon":121234567,"glat":451234567,"gmsl":152340,"gha":1800,"gvn":12500,"gve":-320,"gvd":40,"gsp":12504,"ghm":1823456,"gsa":220,"ghd":9500}
 
 # git: iTOW GPS in ms
-# gok: fix GPS usabile per il singolo campione live
+# gok: fix GPS usabile per il singolo campione live; se false il campione e trattato come IMU-only
 # gft: fixType u-blox
 # gsv: satelliti usati
 # glon / glat: coordinate in unita native 1e-7 deg

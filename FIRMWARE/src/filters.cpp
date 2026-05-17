@@ -228,7 +228,7 @@ namespace Filters
         // gyroZ ha una latenza di una iterazione rispetto al bias attuale: trascurabile a 100 Hz.
         //
         // Se gpsAid.valid è false (GPS assente, fix perso o scaduto) la correzione
-        // non viene applicata e la pipeline si comporta esattamente come senza GPS.
+        // non viene applicata e la pipeline si comporta esattamente come IMU-only.
         float accelXForAngles = state.accelLPFX;
         if (gpsAid.valid)
         {

@@ -34,6 +34,25 @@ static uint32_t g_lastTelemetryMs = 0;
 
 namespace
 {
+    // Converte l'ultimo fix GNSS in ausilio cinematico per i filtri.
+    // Se il GPS non e presente, non sta streamando o il fix non e valido,
+    // restituisce valid=false e la pipeline resta IMU-only.
+    GpsAidData makeGpsAidFromCurrentFix()
+    {
+        GpsFixData gpsFix {};
+        GpsAidData gpsAid {};
+        const bool hasFix = Gps::readFix(gpsFix);
+        if (hasFix && Gps::streaming() && gpsFix.valid && Gps::fixAgeMs() < GPS_FIX_STALE_TIMEOUT_MS)
+        {
+            const float groundSpeedMs = gpsFix.groundSpeedMmS > 0
+                ? gpsFix.groundSpeedMmS * 0.001f
+                : 0.0f;
+            gpsAid.speedMs = groundSpeedMs;
+            gpsAid.valid = true;
+        }
+        return gpsAid;
+    }
+
     // Confronta due strutture di calibrazione per capire se il client le ha modificate.
     bool calibrationEquals(const CalibrationData& a, const CalibrationData& b)
     {
@@ -235,19 +254,11 @@ void loop()
     // Il parser GPS viene fatto avanzare subito, cosi lo status vede dati freschi nello stesso ciclo.
     Gps::update();
 
-    // Aggiorna i dati GPS per la pipeline filtri (sensor task su Core1).
+    // Aggiorna i dati GPS opzionali per la pipeline filtri.
     // gpsAid.valid rimane false se il GPS non è connesso, non ha fix 3D valido o il fix è scaduto:
-    // il sensor task degrada automaticamente al comportamento IMU-only senza nessuna modifica.
+    // In ogni altro caso gpsAid.valid resta false e il sensor task lavora in modalita IMU-only.
     {
-        GpsFixData gpsFix {};
-        GpsAidData newGpsAid {};
-        const bool hasFix = Gps::readFix(gpsFix);
-        if (hasFix && Gps::streaming() && gpsFix.gnssFixOk && !gpsFix.invalidLlh &&
-            Gps::fixAgeMs() < GPS_FIX_STALE_TIMEOUT_MS)
-        {
-            newGpsAid.speedMs = gpsFix.groundSpeedMmS * 0.001f;
-            newGpsAid.valid = true;
-        }
+        const GpsAidData newGpsAid = makeGpsAidFromCurrentFix();
         if (lockState(pdMS_TO_TICKS(5)))
         {
             g_gpsAid = newGpsAid;
