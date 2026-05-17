@@ -72,7 +72,6 @@ Variabili ambiente note:
   - `FIRMWARE/doc/ARCHITETTURA.md`
   - `FIRMWARE/doc/protocol_examples.txt`
 - Ogni modifica firmware deve aggiornare `FIRMWARE/CHANGELOG.md`.
-- Se la modifica tocca codice firmware, aggiornare `FIRMWARE/CHANGES.md` con blocchi diff reali secondo le regole del file `FIRMWARE/AGENTS.md`.
 - Non reintrodurre Wi-Fi, HTTP, WebSocket, SoftAP o logica applicativa GPS nel firmware senza decisione esplicita.
 - Il firmware resta responsabile di IMU, calibrazione, filtri, ausilio GPS opzionale con fix valido/fresco, BLE e OTA BLE.
 

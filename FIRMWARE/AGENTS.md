@@ -44,10 +44,8 @@ Il firmware e gia stato portato a questa architettura:
 
 6. **Documentazione sempre aggiornata**
    Ogni modifica al codice deve aggiornare anche la documentazione correlata.
-   Da adesso in poi ogni modifica al firmware deve essere registrata anche in `CHANGELOG.md` in forma testuale e in `CHANGES.md` in stile GIT/diff per mantenere lo storico e facilitare un eventuale rollback.
-   In `CHANGES.md` non basta elencare file toccati o descrivere la modifica:
-   bisogna riportare le righe realmente modificate in formato diff, con blocchi per file e righe prefissate da `-` e `+`.
-   In `CHANGES.md` vanno riportati solo file di codice del firmware; non inserire diff di file documentali come `doc/*`, `AGENTS.md`, `CHANGELOG.md` o `CHANGES.md`.
+   Ogni modifica al firmware deve essere registrata in `CHANGELOG.md` in forma testuale.
+   Lo storico dettagliato delle righe modificate e dei rollback e gestito da Git.
 
 7. **Non reintrodurre Wi-Fi**
    Wi-Fi, HTTP, WebSocket e SoftAP non devono rientrare nel firmware senza una decisione architetturale esplicita.
@@ -142,11 +140,6 @@ Aggiorna sempre:
 - Mantieni il parser JSON coerente con il protocollo corrente.
 - Mantieni testi di log ed errori centralizzati in `src/messages.h` e `src/messages.cpp`.
 - Registra sempre ogni modifica firmware in `CHANGELOG.md` con descrizione testuale chiara di cosa e cambiato.
-- Aggiorna sempre `CHANGES.md` con le modifiche ai file in stile GIT/diff, cosi da mantenere una traccia utile per eventuale rollback.
-- In `CHANGES.md` inserisci veri blocchi diff con righe di codice modificate.
-- Non sono accettati in `CHANGES.md` riepiloghi testuali, elenchi di file o descrizioni senza le righe effettivamente cambiate.
-- In `CHANGES.md` inserisci solo diff di file di codice firmware, non diff di documentazione o file di processo.
-- File da escludere sempre da `CHANGES.md`: `doc/*`, `AGENTS.md`, `CHANGELOG.md`, `CHANGES.md`, file di build, manifest o altri file di processo non appartenenti al codice firmware.
 - Non reintrodurre fake telemetry o campi protocollo collegati come `debug_fake_telemetry_enabled` o `debug_fake_telemetry_active`.
 - Non reintrodurre nei payload live/status i campi legacy `mrl`, `mrr`, `psr`, `maf`, `mdb`, `ag`, `at` senza versionare il protocollo e aggiornare app/documentazione.
 - Non reintrodurre endpoint o campi legacy solo per compatibilita senza una necessita reale.
@@ -169,7 +162,7 @@ Aggiorna sempre:
 3. aggiornare la persistenza
 4. aggiornare il protocollo
 5. aggiornare la documentazione
-6. aggiornare `CHANGELOG.md` e `CHANGES.md`
+6. aggiornare `CHANGELOG.md`
 7. rigenerare lo zip del firmware
 
 ## Nota finale

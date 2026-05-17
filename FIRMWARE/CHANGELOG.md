@@ -15,7 +15,7 @@
 - durante un OTA BLE in corso il firmware sospende le notify `live_tx` per non sottrarre banda al trasferimento del firmware
 - il protocollo BLE e stato portato alla versione `4.6`
 - aggiornata la documentazione tecnica, inclusi gli esempi protocollo, sul nuovo flusso temporale e termico dei campioni IMU
-- chiarita la regola operativa: `CHANGES.md` deve contenere righe modificate reali in formato diff, non solo riepiloghi testuali
+- chiarita la regola operativa precedente sui diff manuali, ora sostituita dallo storico Git
 
 ## 2026-03-30
 - aggiunta una predisposizione UART dedicata per un modulo GNSS esterno tipo `SAM-M10Q`, con `GPIO19` come RX ESP32 da `TX GPS` e `GPIO20` come TX ESP32 verso `RX GPS`
