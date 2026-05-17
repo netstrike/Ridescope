@@ -45,7 +45,7 @@ Trigger:
 Ambiente CI:
 - runner `ubuntu-latest`
 - Python `3.13`
-- installazione PlatformIO via `python -m pip install --upgrade platformio`
+- installazione PlatformIO via `FIRMWARE/requirements.txt`
 - `RIDESCOPE_SKIP_FTP_PUBLISH=1` per evitare pubblicazioni remote dalla CI
 
 Artifact pubblicati:
