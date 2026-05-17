@@ -23,6 +23,16 @@ Se l'ambiente Arduino IDE non permette di usare con chiarezza il CSV di partizio
 ## PlatformIO
 Nel progetto e gia presente `platformio.ini` pronto all'uso.
 
+Su Windows usa lo script del progetto dalla root `FIRMWARE`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build-firmware.ps1
+```
+
+Lo script preferisce il PlatformIO del virtualenv interno in `%USERPROFILE%\.platformio\penv\Scripts\platformio.exe`.
+Questo evita problemi quando `python` nel PATH punta a una versione non supportata dalla piattaforma ESP32, per esempio Python `3.14`.
+La piattaforma ESP32 usata da PlatformIO richiede Python `3.10`, `3.11`, `3.12` o `3.13`.
+
 Punti importanti:
 - platform ESP32: `pioarduino/platform-espressif32`
 - board: `esp32-c6-devkitc-1`

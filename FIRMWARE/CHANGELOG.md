@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-05-17
+- aggiunto script PowerShell `scripts/build-firmware.ps1` per compilare usando il PlatformIO corretto anche quando `python` nel PATH non e compatibile
+
 ## 2026-05-16
 - chiarito che il GPS, quando presente con stream e fix valido/fresco, puo essere usato come ausilio nei calcoli dei filtri
 - aggiornato il fallback esplicito a modalita IMU-only quando GPS o fix non sono disponibili
