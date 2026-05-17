@@ -42,8 +42,10 @@ enum class TelemetryGpsSource {
     Phone,
 }
 
+private const val DefaultFirmwareUpdateHttpBaseUrl = "https://netstrike.github.io/Ridescope"
+
 data class FirmwareUpdateSettings(
-    val httpBaseUrl: String = "http://www.sparvieri.org/ridescope",
+    val httpBaseUrl: String = DefaultFirmwareUpdateHttpBaseUrl,
     val firmwareDirectory: String = "firmware",
     val appDirectory: String = "app",
     val checkIntervalMinutes: Int = 1440,

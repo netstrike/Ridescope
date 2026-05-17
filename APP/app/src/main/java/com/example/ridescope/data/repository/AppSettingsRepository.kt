@@ -111,6 +111,11 @@ class AppSettingsRepository(
     private fun loadFirmwareUpdateSettings(): FirmwareUpdateSettings {
         val storedBaseUrl = prefs.getString(KeyFirmwareUpdateHttpBaseUrl, null)
             ?.takeIf { it.isNotBlank() }
+        val migratedBaseUrl = when (storedBaseUrl?.trim()?.trimEnd('/')) {
+            null -> FirmwareUpdateSettings.Default.httpBaseUrl
+            LegacyFirmwareUpdateHttpBaseUrl -> FirmwareUpdateSettings.Default.httpBaseUrl
+            else -> storedBaseUrl
+        }
         val legacyFirmwareDirectory = prefs.getString(
             KeyFirmwareUpdateFtpDirectory,
             null,
@@ -147,7 +152,7 @@ class AppSettingsRepository(
         }
 
         val settings = FirmwareUpdateSettings(
-            httpBaseUrl = storedBaseUrl ?: FirmwareUpdateSettings.Default.httpBaseUrl,
+            httpBaseUrl = migratedBaseUrl,
             firmwareDirectory = prefs.getString(
                 KeyFirmwareUpdateFirmwareDirectory,
                 migratedFirmwareDirectory,
@@ -159,7 +164,7 @@ class AppSettingsRepository(
             checkIntervalMinutes = storedMinutes,
         ).normalized()
 
-        if (storedBaseUrl == null ||
+        if (storedBaseUrl?.trim()?.trimEnd('/') != migratedBaseUrl ||
             !prefs.contains(KeyFirmwareUpdateFirmwareDirectory) ||
             !prefs.contains(KeyFirmwareUpdateAppDirectory) ||
             !prefs.contains(KeyFirmwareUpdateCheckIntervalMinutes)
@@ -251,6 +256,7 @@ class AppSettingsRepository(
         const val KeyFirmwareUpdateProgressPercent = "firmware_update_progress_percent"
         const val KeyAppUpdateInProgress = "app_update_in_progress"
         const val KeyAppUpdateProgressPercent = "app_update_progress_percent"
+        const val LegacyFirmwareUpdateHttpBaseUrl = "http://www.sparvieri.org/ridescope"
         const val LegacyFirmwareUpdateFtpDirectory = "ftp/rideshare/firmware"
     }
 }

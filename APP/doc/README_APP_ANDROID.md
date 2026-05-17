@@ -125,6 +125,7 @@ I picchi di roll, pitch, accelerazione e frenata sono gestiti localmente dall'ap
 - il gauge AY puo essere visualizzato in `g` oppure in `m*s^2`, con aggiornamento coerente di valore realtime e scala
 - la pagina `Impostazioni` espone anche un toggle app-side per mantenere lo schermo sempre acceso oppure lasciarlo gestire dal sistema
 - la pagina `Impostazioni` espone anche la configurazione HTTP del repository firmware e l'intervallo di controllo
+- il repository firmware HTTP predefinito e GitHub Pages: `https://netstrike.github.io/Ridescope/firmware/manifest.json`
 - la pagina `Aggiornamento` espone la UI operativa per verifica versioni, stato aggiornamento, progresso OTA e azioni `CONTROLLA ORA` / `UPD`
 - cambiando il limite del gauge pitch, l'app aggiorna sia le etichette scala sia l'ampiezza dell'arco
 - la pagina `Filtri` contiene i parametri tecnici dei filtri firmware
