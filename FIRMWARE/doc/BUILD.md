@@ -33,6 +33,27 @@ Lo script preferisce il PlatformIO del virtualenv interno in `%USERPROFILE%\.pla
 Questo evita problemi quando `python` nel PATH punta a una versione non supportata dalla piattaforma ESP32, per esempio Python `3.14`.
 La piattaforma ESP32 usata da PlatformIO richiede Python `3.10`, `3.11`, `3.12` o `3.13`.
 
+## GitHub Actions
+La build firmware e automatizzata in `.github/workflows/firmware.yml`.
+
+Trigger:
+- push su `main` quando cambiano file in `FIRMWARE/**` o la workflow firmware
+- pull request che toccano `FIRMWARE/**`
+- tag `firmware-*`
+- avvio manuale con `workflow_dispatch`
+
+Ambiente CI:
+- runner `ubuntu-latest`
+- Python `3.13`
+- installazione PlatformIO via `python -m pip install --upgrade platformio`
+- `RIDESCOPE_SKIP_FTP_PUBLISH=1` per evitare pubblicazioni remote dalla CI
+
+Artifact pubblicati:
+- `FIRMWARE/.pio/build/esp32c6/firmware.bin`
+- `FIRMWARE/.pio/build/esp32c6/manifest.json`
+
+Gli artifact GitHub sono il canale di build versionato. La distribuzione OTA verso l'app dovra usare il `firmware.bin` e il `manifest.json` provenienti da una build GitHub validata.
+
 Punti importanti:
 - platform ESP32: `pioarduino/platform-espressif32`
 - board: `esp32-c6-devkitc-1`

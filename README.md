@@ -20,6 +20,10 @@ RideScope e un sistema per telemetria moto basato su:
 - Hardware firmware: `FIRMWARE/doc/HARDWARE.md`
 - Upload debug web: `WEB/ridescope.README.md`
 
+## Build GitHub
+
+- Firmware: `.github/workflows/firmware.yml` compila PlatformIO su GitHub Actions e pubblica `firmware.bin` / `manifest.json` come artifact.
+
 ## Configurazione locale
 
 Le credenziali non devono essere salvate nel repository.
