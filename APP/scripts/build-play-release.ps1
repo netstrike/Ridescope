@@ -45,7 +45,6 @@ $keytoolPath = Join-Path $JavaHome "bin\keytool.exe"
 $buildStatePath = Join-Path $repoAppRoot "ridescope_app_build_state.properties"
 $releaseBundleDir = Join-Path $repoAppRoot "app\build\outputs\bundle\release"
 $canonicalBundlePath = Join-Path $releaseBundleDir "app-release.aab"
-$nativeSymbolsTempDir = Join-Path $releaseBundleDir "native-debug-symbols-temp"
 
 if (-not (Test-Path $JavaHome)) {
     throw "JAVA_HOME non trovato: $JavaHome"
@@ -108,49 +107,11 @@ try {
 
     $versionedBundleName = "app-release-v$versionName-code$versionCode.aab"
     $versionedBundlePath = Join-Path $releaseBundleDir $versionedBundleName
-    $nativeSymbolsZipName = "native-debug-symbols-v$versionName-code$versionCode.zip"
-    $nativeSymbolsZipPath = Join-Path $releaseBundleDir $nativeSymbolsZipName
     Copy-Item -LiteralPath $canonicalBundlePath -Destination $versionedBundlePath -Force
-
-    Remove-Item -Recurse -Force $nativeSymbolsTempDir -ErrorAction SilentlyContinue
-    New-Item -ItemType Directory -Force -Path $nativeSymbolsTempDir | Out-Null
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    $bundleArchive = [System.IO.Compression.ZipFile]::OpenRead($canonicalBundlePath)
-    try {
-        $nativeLibraries = @(
-            $bundleArchive.Entries | Where-Object { $_.FullName -match "^base/lib/([^/]+)/([^/]+\.so)$" }
-        )
-        foreach ($entry in $nativeLibraries) {
-            $abi = [regex]::Match($entry.FullName, "^base/lib/([^/]+)/").Groups[1].Value
-            $libraryName = Split-Path $entry.FullName -Leaf
-            $abiDirectory = Join-Path $nativeSymbolsTempDir $abi
-            New-Item -ItemType Directory -Force -Path $abiDirectory | Out-Null
-            [System.IO.Compression.ZipFileExtensions]::ExtractToFile(
-                $entry,
-                (Join-Path $abiDirectory $libraryName),
-                $true
-            )
-        }
-    } finally {
-        $bundleArchive.Dispose()
-    }
-
-    if ((Get-ChildItem -Recurse -File $nativeSymbolsTempDir -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0) {
-        Remove-Item -Force $nativeSymbolsZipPath -ErrorAction SilentlyContinue
-        Compress-Archive -Path (Join-Path $nativeSymbolsTempDir "*") -DestinationPath $nativeSymbolsZipPath -Force
-    }
-    Remove-Item -Recurse -Force $nativeSymbolsTempDir -ErrorAction SilentlyContinue
 
     Write-Host ""
     Write-Host "AAB Play Console generato con versionCode $versionCode e versionName ${versionName}:"
     Write-Host $versionedBundlePath
-    if (Test-Path $nativeSymbolsZipPath) {
-        Write-Host ""
-        Write-Host "Simboli nativi generati per la stessa versione:"
-        Write-Host $nativeSymbolsZipPath
-        Write-Host "Nota: la schermata di creazione release accetta solo AAB. Se Play Console espone l'upload simboli,"
-        Write-Host "carica questo ZIP dopo dall'App Bundle Explorer; altrimenti l'avviso e solo informativo."
-    }
     Write-Host ""
     Write-Host "Carica questo file versionato in Play Console. Ogni nuovo upload deve avere un versionCode mai usato prima."
 } finally {

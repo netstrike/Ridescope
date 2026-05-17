@@ -45,8 +45,7 @@ Build release Play Console:
 - output Gradle canonico: `app/build/outputs/bundle/release/app-release.aab`
 - lo script guidato copia anche un AAB versionato, ad esempio `app-release-v1.0.440-code10440.aab`, da usare per evitare caricamenti duplicati
 - le release Play usano R8 con `proguard-android-optimize.txt`, minificazione codice e shrink delle risorse
-- la schermata di creazione release accetta l'AAB; se Play Console segnala codice nativo senza simboli, lo ZIP `native-debug-symbols-v<versionName>-code<versionCode>.zip` generato dallo script e opzionale e si carica, quando disponibile, dall'App Bundle Explorer per la stessa versione
-- se Play Console non espone l'upload dei simboli per il bundle, l'avviso sui simboli nativi e informativo e non blocca il rilascio
+- lo script guidato non genera ZIP accessori: per Play Console si usa solo l'AAB versionato
 
 Script guidato:
 ```powershell
