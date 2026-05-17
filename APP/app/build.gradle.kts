@@ -444,6 +444,10 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
+
+        ndk {
+            debugSymbolLevel = "SYMBOL_TABLE"
+        }
     }
 
     signingConfigs {
@@ -461,9 +465,6 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            ndk {
-                debugSymbolLevel = "SYMBOL_TABLE"
-            }
             if (rideScopeReleaseSigningEnabled) {
                 signingConfig = signingConfigs.getByName("ridescopeRelease")
             }
